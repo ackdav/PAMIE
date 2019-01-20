@@ -4,12 +4,13 @@
 # Date       : 25 June 2003
 # Version    : 1.0 pre-alpha 2
 # Copyright  : Released to the public domain. Provided as-is, with no warranty.
-# Notes      : Requires Python 2.3, win32all and ctypes 
-'''Windows GUI automation utilities.
+# Notes      : Requires Python 2.3, win32all and ctypes
+"""
+Windows GUI automation utilities.
 
 Until I get around to writing some docs and examples, the tests at the foot of
 this module should serve to get you started.
-'''
+"""
 
 import array
 import ctypes
@@ -20,8 +21,12 @@ import win32api
 import win32con
 import win32gui
 import time
+import pprint
+import random
+import time
 
 TIMEOUT = 10
+
 
 def findTopWindow(wantedText=None, wantedClass=None, selectionFunction=None):
     '''Find the hwnd of a top level window.
@@ -36,7 +41,7 @@ def findTopWindow(wantedText=None, wantedClass=None, selectionFunction=None):
                         should be passed here. The function should take hwnd as
                         an argument, and should return True when passed the
                         hwnd of a desired window.
-                    
+
     Raises:
     WinGuiAutoError     When no window found.
 
@@ -44,32 +49,32 @@ def findTopWindow(wantedText=None, wantedClass=None, selectionFunction=None):
     '''
     keepTrying = True
     startTime = time.clock()
-    print "start: " +  str(startTime)
-     
+    print("start: " + str(startTime))
+
     while keepTrying:
         topWindows = findTopWindows(wantedText, wantedClass, selectionFunction)
         if topWindows:
             keepTrying = False
         else:
-            print "clock: " + str(time.clock())
+            print("clock: " + str(time.clock()))
             if startTime + TIMEOUT < time.clock():
                 keepTrying = False
             else:
                 time.sleep(1)
-            
 
-    #topWindows = findTopWindows(wantedText, wantedClass, selectionFunction)
+    # topWindows = findTopWindows(wantedText, wantedClass, selectionFunction)
     if topWindows:
         return topWindows[0]
     else:
         return topWindows
-    #else:
+    # else:
     #    raise WinGuiAutoError("No top level window found for wantedText=" +
     #                           repr(wantedText) +
     #                           ", wantedClass=" +
     #                           repr(wantedClass) +
     #                           ", selectionFunction=" +
     #                           repr(selectionFunction))
+
 
 def findTopWindows(wantedText=None, wantedClass=None, selectionFunction=None):
     '''Find the hwnd of top level windows.
@@ -102,7 +107,8 @@ def findTopWindows(wantedText=None, wantedClass=None, selectionFunction=None):
             continue
         results.append(hwnd)
     return results
-    
+
+
 def dumpWindow(hwnd):
     '''Dump all controls from a window into a nested list
     Useful during development, allowing to you discover the structure of the
@@ -131,6 +137,7 @@ def dumpWindow(hwnd):
             window.append(window_content)
     return windows
 
+
 def findControl(topHwnd,
                 wantedText=None,
                 wantedClass=None,
@@ -152,7 +159,7 @@ def findControl(topHwnd,
 
     Returns:            The window handle of the first control matching the
                         supplied selection criteria.
-                    
+
     Raises:
     WinGuiAutoError     When no control found.
 
@@ -169,13 +176,14 @@ def findControl(topHwnd,
         return controls[0]
     else:
         raise WinGuiAutoError("No control found for topHwnd=" +
-                               repr(topHwnd) +
-                               ", wantedText=" +
-                               repr(wantedText) +
-                               ", wantedClass=" +
-                               repr(wantedClass) +
-                               ", selectionFunction=" +
-                               repr(selectionFunction))
+                              repr(topHwnd) +
+                              ", wantedText=" +
+                              repr(wantedText) +
+                              ", wantedClass=" +
+                              repr(wantedClass) +
+                              ", selectionFunction=" +
+                              repr(selectionFunction))
+
 
 def findControls(topHwnd,
                  wantedText=None,
@@ -197,13 +205,14 @@ def findControls(topHwnd,
                         hwnd of a desired control.
 
     Returns:            The window handles of the controls matching the
-                        supplied selection criteria.    
+                        supplied selection criteria.
 
     Usage example:      optDialog = findTopWindow(wantedText="Options")
                         def findButtons(hwnd, windowText, windowClass):
                             return windowClass == "Button"
                         buttons = findControl(optDialog, wantedText="Button")
                         '''
+
     def searchChildWindows(currentHwnd):
         results = []
         childWindows = []
@@ -221,22 +230,23 @@ def findControls(topHwnd,
                 results += descendentMatchingHwnds
 
             if wantedText and \
-               not _normaliseText(wantedText) in _normaliseText(windowText):
+                    not _normaliseText(wantedText) in _normaliseText(windowText):
                 continue
             if wantedClass and \
-               not windowClass == wantedClass:
+                    not windowClass == wantedClass:
                 continue
             if selectionFunction and \
-               not selectionFunction(childHwnd):
+                    not selectionFunction(childHwnd):
                 continue
             results.append(childHwnd)
         return results
 
     return searchChildWindows(topHwnd)
 
+
 def getTopMenu(hWnd):
     '''Get a window's main, top level menu.
-    
+
     Arguments:
     hWnd            The window handle of the top level window for which the top
                     level menu is required.
@@ -246,31 +256,32 @@ def getTopMenu(hWnd):
     Usage example:  hMenu = getTopMenu(hWnd)'''
     return ctypes.windll.user32.GetMenu(ctypes.c_long(hWnd))
 
+
 def activateMenuItem(hWnd, menuItemPath):
     '''Activate a menu item
-    
+
     Arguments:
-    hWnd                The window handle of the top level window whose menu you 
+    hWnd                The window handle of the top level window whose menu you
                         wish to activate.
     menuItemPath        The path to the required menu item. This should be a
                         sequence specifying the path through the menu to the
                         required item. Each item in this path can be specified
                         either as an index, or as a menu name.
-                    
+
     Raises:
     WinGuiAutoError     When the requested menu option isn't found.
 
     Usage example:      activateMenuItem(notepadWindow, ('file', 'open'))
-    
+
                         Which is exactly equivalent to...
-                    
+
                         activateMenuItem(notepadWindow, (0, 1))'''
     # By Axel Kowald (kowald@molgen.mpg.de)
     # Modified by S Brunning to accept strings in addition to indicies.
 
-    # Top level menu    
+    # Top level menu
     hMenu = getTopMenu(hWnd)
-    
+
     # Get top level menu's item count. Is there a better way to do this?
     for hMenuItemCount in xrange(256):
         try:
@@ -278,14 +289,14 @@ def activateMenuItem(hWnd, menuItemPath):
         except WinGuiAutoError:
             break
     hMenuItemCount -= 1
-    
+
     # Walk down submenus
     for submenu in menuItemPath[:-1]:
-        try: # submenu is an index
+        try:  # submenu is an index
             0 + submenu
             submenuInfo = getMenuInfo(hMenu, submenu)
             hMenu, hMenuItemCount = submenuInfo.submenu, submenuInfo.itemCount
-        except TypeError: # Hopefully, submenu is a menu name
+        except TypeError:  # Hopefully, submenu is a menu name
             try:
                 dump, hMenu, hMenuItemCount = _findNamedSubmenu(hMenu,
                                                                 hMenuItemCount,
@@ -294,18 +305,18 @@ def activateMenuItem(hWnd, menuItemPath):
                 raise WinGuiAutoError("Menu path " +
                                       repr(menuItemPath) +
                                       " cannot be found.")
-           
+
     # Get required menu item's ID. (the one at the end).
     menuItem = menuItemPath[-1]
-    try: # menuItem is an index
+    try:  # menuItem is an index
         0 + menuItem
         menuItemID = ctypes.windll.user32.GetMenuItemID(hMenu,
                                                         menuItem)
-    except TypeError: # Hopefully, menuItem is a menu name
+    except TypeError:  # Hopefully, menuItem is a menu name
         try:
             subMenuIndex, dump, dump = _findNamedSubmenu(hMenu,
-                                        hMenuItemCount,
-                                        menuItem)
+                                                         hMenuItemCount,
+                                                         menuItem)
         except WinGuiAutoError:
             raise WinGuiAutoError("Menu path " +
                                   repr(menuItemPath) +
@@ -313,12 +324,13 @@ def activateMenuItem(hWnd, menuItemPath):
         # TODO - catch WinGuiAutoError. and pass on with better info.
         menuItemID = ctypes.windll.user32.GetMenuItemID(hMenu, subMenuIndex)
 
-    # Activate    
+    # Activate
     win32gui.PostMessage(hWnd, win32con.WM_COMMAND, menuItemID, 0)
-    
+
+
 def getMenuInfo(hMenu, uIDItem):
     '''Get various info about a menu item.
-    
+
     Arguments:
     hMenu               The menu in which the item is to be found.
     uIDItem             The item's index
@@ -329,32 +341,34 @@ def getMenuInfo(hMenu, uIDItem):
                         It will have useful attributes: name, itemCount,
                         submenu, isChecked, isDisabled, isGreyed, and
                         isSeperator
-                    
+
     Raises:
-    WinGuiAutoError     When the requested menu option isn't found.       
+    WinGuiAutoError     When the requested menu option isn't found.
 
     Usage example:      submenuInfo = getMenuInfo(hMenu, submenu)
                         hMenu, hMenuItemCount = submenuInfo.submenu, submenuInfo.itemCount'''
+
     # An object to hold the menu info
     class MenuInfo(Bunch):
         pass
+
     menuInfo = MenuInfo()
 
-    # Menu state    
+    # Menu state
     menuState = ctypes.windll.user32.GetMenuState(hMenu,
                                                   uIDItem,
                                                   win32con.MF_BYPOSITION)
     if menuState == -1:
         raise WinGuiAutoError("No such menu item, hMenu=" +
-                               str(hMenu) +
-                               " uIDItem=" +
-                               str(uIDItem))
+                              str(hMenu) +
+                              " uIDItem=" +
+                              str(uIDItem))
     menuInfo.isChecked = bool(menuState & win32con.MF_CHECKED)
     menuInfo.isDisabled = bool(menuState & win32con.MF_DISABLED)
     menuInfo.isGreyed = bool(menuState & win32con.MF_GRAYED)
     menuInfo.isSeperator = bool(menuState & win32con.MF_SEPARATOR)
     # ... there are more, but these are the ones I'm interested in
-    
+
     # Menu name
     menuName = ctypes.c_buffer("\000" * 32)
     ctypes.windll.user32.GetMenuStringA(ctypes.c_int(hMenu),
@@ -369,8 +383,9 @@ def getMenuInfo(hMenu, uIDItem):
         menuInfo.submenu = ctypes.windll.user32.GetSubMenu(hMenu, uIDItem)
     else:
         menuInfo.submenu = None
-    
+
     return menuInfo
+
 
 def clickButton(hwnd):
     '''Simulates a single mouse click on a button
@@ -385,6 +400,7 @@ def clickButton(hwnd):
     '''
     _sendNotifyMessage(hwnd, win32con.BN_CLICKED)
 
+
 def clickStatic(hwnd):
     '''Simulates a single mouse click on a static
 
@@ -395,6 +411,7 @@ def clickStatic(hwnd):
     '''
     _sendNotifyMessage(hwnd, win32con.STN_CLICKED)
 
+
 def doubleClickStatic(hwnd):
     '''Simulates a double mouse click on a static
 
@@ -404,6 +421,7 @@ def doubleClickStatic(hwnd):
     Usage example:  TODO
     '''
     _sendNotifyMessage(hwnd, win32con.STN_DBLCLK)
+
 
 def getComboboxItems(hwnd):
     '''Returns the items in a combo box control.
@@ -416,10 +434,11 @@ def getComboboxItems(hwnd):
     Usage example:  fontCombo = findControl(fontDialog, wantedClass="ComboBox")
                     fontComboItems = getComboboxItems(fontCombo)
     '''
-    
+
     return _getMultipleWindowValues(hwnd,
-                                     getCountMessage=win32con.CB_GETCOUNT,
-                                     getValueMessage=win32con.CB_GETLBTEXT)
+                                    getCountMessage=win32con.CB_GETCOUNT,
+                                    getValueMessage=win32con.CB_GETLBTEXT)
+
 
 def selectComboboxItem(hwnd, item):
     '''Selects a specified item in a Combo box control.
@@ -433,14 +452,15 @@ def selectComboboxItem(hwnd, item):
                     selectComboboxItem(fontCombo,
                                        random.choice(fontComboItems))
     '''
-    try: # item is an index Use this to select
+    try:  # item is an index Use this to select
         0 + item
         win32gui.SendMessage(hwnd, win32con.CB_SETCURSEL, item, 0)
         _sendNotifyMessage(hwnd, win32con.CBN_SELCHANGE)
-    except TypeError: # Item is a string - find the index, and use that
+    except TypeError:  # Item is a string - find the index, and use that
         items = getComboboxItems(hwnd)
         itemIndex = items.index(item)
         selectComboboxItem(hwnd, itemIndex)
+
 
 def getListboxItems(hwnd):
     '''Returns the items in a list box control.
@@ -452,10 +472,11 @@ def getListboxItems(hwnd):
 
     Usage example:  TODO
     '''
-    
+
     return _getMultipleWindowValues(hwnd,
-                                     getCountMessage=win32con.LB_GETCOUNT,
-                                     getValueMessage=win32con.LB_GETTEXT)
+                                    getCountMessage=win32con.LB_GETCOUNT,
+                                    getValueMessage=win32con.LB_GETTEXT)
+
 
 def selectListboxItem(hwnd, item):
     '''Selects a specified item in a list box control.
@@ -467,15 +488,16 @@ def selectListboxItem(hwnd, item):
 
     Usage example:  TODO
     '''
-    try: # item is an index Use this to select
+    try:  # item is an index Use this to select
         0 + item
         win32gui.SendMessage(hwnd, win32con.LB_SETCURSEL, item, 0)
         _sendNotifyMessage(hwnd, win32con.LBN_SELCHANGE)
-    except TypeError: # Item is a string - find the index, and use that
+    except TypeError:  # Item is a string - find the index, and use that
         items = getListboxItems(hwnd)
         itemIndex = items.index(item)
         selectListboxItem(hwnd, itemIndex)
-                                    
+
+
 def getEditText(hwnd):
     '''Returns the text in an edit control.
 
@@ -489,10 +511,11 @@ def getEditText(hwnd):
     return _getMultipleWindowValues(hwnd,
                                     getCountMessage=win32con.EM_GETLINECOUNT,
                                     getValueMessage=win32con.EM_GETLINE)
-    
+
+
 def setEditText(hwnd, text, append=False):
     '''Set an edit control's text.
-    
+
     Arguments:
     hwnd            The edit control's hwnd.
     text            The text to send to the control. This can be a single
@@ -507,19 +530,19 @@ def setEditText(hwnd, text, append=False):
                     If appending lines of text, you may wish to pass in an
                     empty string as the 1st element of the 'text' argument.
 
-    Usage example:  print "Enter various bits of text."
+    Usage example:  print("Enter various bits of text."
                     setEditText(editArea, "Hello, again!")
                     time.sleep(.5)
                     setEditText(editArea, "You still there?")
                     time.sleep(.5)
                     setEditText(editArea, ["Here come", "two lines!"])
                     time.sleep(.5)
-                    
-                    print "Add some..."
+
+                    print("Add some..."
                     setEditText(editArea, ["", "And a 3rd one!"], append=True)
                     time.sleep(.5)'''
-    
-    # Ensure that text is a list        
+
+    # Ensure that text is a list
     try:
         text + ''
         text = [text]
@@ -537,12 +560,13 @@ def setEditText(hwnd, text, append=False):
                              win32con.EM_SETSEL,
                              0,
                              -1)
-                             
+
     # Send the text
     win32gui.SendMessage(hwnd,
                          win32con.EM_REPLACESEL,
                          True,
                          os.linesep.join(text))
+
 
 def _getMultipleWindowValues(hwnd, getCountMessage, getValueMessage):
     '''A common pattern in the Win32 API is that in order to retrieve a
@@ -558,10 +582,10 @@ def _getMultipleWindowValues(hwnd, getCountMessage, getValueMessage):
 
     Returns:            Retrieved items.'''
     result = []
-    
+
     VALUE_LENGTH = 256
-    bufferlength_int  = struct.pack('i', VALUE_LENGTH) # This is a C style int.
-    
+    bufferlength_int = struct.pack('i', VALUE_LENGTH)  # This is a C style int.
+
     valuecount = win32gui.SendMessage(hwnd, getCountMessage, 0, 0)
     for itemIndex in range(valuecount):
         valuebuffer = array.array('c',
@@ -574,13 +598,15 @@ def _getMultipleWindowValues(hwnd, getCountMessage, getValueMessage):
         result.append(valuebuffer.tostring()[:valueLength])
     return result
 
+
 def _windowEnumerationHandler(hwnd, resultList):
     '''Pass to win32gui.EnumWindows() to generate list of window handle,
     window text, window class tuples.'''
     resultList.append((hwnd,
                        win32gui.GetWindowText(hwnd),
                        win32gui.GetClassName(hwnd)))
-    
+
+
 def _buildWinLong(high, low):
     '''Build a windows long parameter from high and low words.
     See http://support.microsoft.com/support/kb/articles/q189/1/70.asp
@@ -589,8 +615,9 @@ def _buildWinLong(high, low):
     return int(struct.unpack('>L',
                              struct.pack('>2H',
                                          high,
-                                         low)) [0])
-        
+                                         low))[0])
+
+
 def _sendNotifyMessage(hwnd, nofifyMessage):
     '''Send a notify message to a control.'''
     win32gui.SendMessage(win32gui.GetParent(hwnd),
@@ -600,10 +627,12 @@ def _sendNotifyMessage(hwnd, nofifyMessage):
                                                               win32con.GWL_ID)),
                          hwnd)
 
+
 def _normaliseText(controlText):
     '''Remove '&' characters, and lower case.
     Useful for matching control text.'''
     return controlText.lower().replace('&', '')
+
 
 def _findNamedSubmenu(hMenu, hMenuItemCount, submenuName):
     '''Find the index number of a menu's submenu with a specific name.'''
@@ -617,164 +646,161 @@ def _findNamedSubmenu(hMenu, hMenuItemCount, submenuName):
                           repr(hMenuItemCount) +
                           ", submenuName=" +
                           repr(submenuName))
-                
-                              
+
+
 class Bunch(object):
     '''See http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52308'''
-    
+
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
-        
+
     def __str__(self):
         state = ["%s=%r" % (attribute, value)
                  for (attribute, value)
                  in self.__dict__.items()]
         return '\n'.join(state)
-    
+
+
 class WinGuiAutoError(Exception):
     pass
-        
+
+
 if __name__ == '__main__':
     # Test - drives notepad.
     # I't like to use unittest here, but I've no idea how to automate these
-    # tests. 
-    
+    # tests.
+
     # NT/2K/XP notepads have a different menu stuctures.
     win_version = {4: "NT", 5: "2K", 6: "XP"}[os.sys.getwindowsversion()[0]]
-    print "win_version=", win_version
-    
-    import pprint
-    import random
-    import time
-    
-    print "Open and locate Notepad"
+    print("win_version=", win_version)
+
+    print("Open and locate Notepad")
     os.startfile('notepad')
     time.sleep(.5)
     notepadWindow = findTopWindow(wantedClass='Notepad')
-    
-    print "Open and locate the 'replace' dialogue"
+
+    print("Open and locate the 'replace' dialogue")
     if win_version in ["NT"]:
         activateMenuItem(notepadWindow, ['search', 'replace'])
     elif win_version in ["2K", "XP"]:
         activateMenuItem(notepadWindow, ['edit', 'replace'])
     time.sleep(.5)
     replaceDialog = findTopWindow(wantedText='Replace')
-    
-    print "Locate the 'find' edit box"
+
+    print("Locate the 'find' edit box")
     findValue = findControl(replaceDialog, wantedClass="Edit")
-                                   
-    print "Enter some text - and wait long enough for it to be seen"
+
+    print("Enter some text - and wait long enough for it to be seen")
     setEditText(findValue, "Hello, mate!")
     time.sleep(.5)
-    
-    print "Locate the 'cancel' button, and click it."
+
+    print("Locate the 'cancel' button, and click it.")
     cancelButton = findControl(replaceDialog,
                                wantedClass="Button",
                                wantedText="Cancel")
     clickButton(cancelButton)
-    
-    print "Open and locate the 'font' dialogue"
+
+    print("Open and locate the 'font' dialogue")
     if win_version in ["NT"]:
         activateMenuItem(notepadWindow, ['edit', 'set font'])
     elif win_version in ["2K", "XP"]:
         activateMenuItem(notepadWindow, ['format', 'font'])
     time.sleep(.5)
     fontDialog = findTopWindow(wantedText='Font')
-    
-    print "Let's see if dumping works. Dump the 'font' dialogue contents:"
+
+    print("Let's see if dumping works. Dump the 'font' dialogue contents:")
     pprint.pprint(dumpWindow(fontDialog))
-    
-    print "Change the font"
+
+    print("Change the font")
     fontCombos = findControls(fontDialog, wantedClass="ComboBox")
-    print "Find the font selection combo"
+    print("Find the font selection combo")
     for fontCombo in fontCombos:
         fontComboItems = getComboboxItems(fontCombo)
         if 'Arial' in fontComboItems:
             break
-    
-    print "Select at random"
+
+    print("Select at random")
     selectComboboxItem(fontCombo, random.choice(fontComboItems))
     time.sleep(.5)
-    
+
     okButton = findControl(fontDialog, wantedClass="Button", wantedText="OK")
     clickButton(okButton)
-    
-    print "Locate notpads edit area, and enter various bits of text."
-    editArea = findControl(notepadWindow,wantedClass="Edit")
+
+    print("Locate notpads edit area, and enter various bits of text.")
+    editArea = findControl(notepadWindow, wantedClass="Edit")
     setEditText(editArea, "Hello, again!")
     time.sleep(.5)
     setEditText(editArea, "You still there?")
     time.sleep(.5)
     setEditText(editArea, ["Here come", "two lines!"])
     time.sleep(.5)
-    
-    print "Add some..."
+
+    print("Add some...")
     setEditText(editArea, ["", "And a 3rd one!"], append=True)
     time.sleep(.5)
-    
-    print "See what's there now:"
+
+    print("See what's there now:")
     pprint.pprint(getEditText(editArea))
-    
-    print "Exit notepad"
+
+    print("Exit notepad")
     activateMenuItem(notepadWindow, ('file', 'exit'))
     time.sleep(.5)
-    
-    print "Don't save."
+
+    print("Don't save.")
     saveDialog = findTopWindow(wantedText='Notepad')
     time.sleep(.5)
-    noButton = findControl(saveDialog,wantedClass="Button", wantedText="no")
+    noButton = findControl(saveDialog, wantedClass="Button", wantedText="no")
     clickButton(noButton)
-    
-    print "OK, now we'll have a go with WordPad."
+
+    print("OK, now we'll have a go with WordPad.")
     os.startfile('wordpad')
     time.sleep(1)
     wordpadWindow = findTopWindow(wantedText='WordPad')
-    
-    print "Open and locate the 'new document' dialog."
+
+    print("Open and locate the 'new document' dialog.")
     activateMenuItem(wordpadWindow, [0, 0])
     time.sleep(.5)
     newDialog = findTopWindow(wantedText='New')
-    
-    print "Check you get an exception for non-existent control"
+
+    print("Check you get an exception for non-existent control")
     try:
         findControl(newDialog, wantedClass="Banana")
         raise Exception("Test failed")
-    except WinGuiAutoError, winGuiAutoError:
-        print "Yup, got: ", str(winGuiAutoError)
-    
-    print "Locate the 'document type' list box"
+    except:
+        print("Got Exception")
+
+    print("Locate the 'document type' list box")
     docType = findControl(newDialog, wantedClass="ListBox")
     typeListBox = getListboxItems(docType)
-    print "getListboxItems(docType)=", typeListBox
-    
-    print "Select a type at random"
-    selectListboxItem(docType, random.randint(0, len(typeListBox)-1))
+    print("getListboxItems(docType)=", typeListBox)
+
+    print("Select a type at random")
+    selectListboxItem(docType, random.randint(0, len(typeListBox) - 1))
     time.sleep(.5)
     clickButton(findControl(newDialog, wantedClass="Button", wantedText="OK"))
-    
-    print "Check you get an exception for non-existent menu path"
+
+    print("Check you get an exception for non-existent menu path")
     try:
         activateMenuItem(wordpadWindow, ('not', 'there'))
         raise Exception("Test failed")
-    except WinGuiAutoError, winGuiAutoError:
-        print "Yup, got: ", str(winGuiAutoError)
-    
-    print "Check you get an exception for non-existent menu item"
+    except:
+        print("Got Exception")
+
+    print("Check you get an exception for non-existent menu item")
     try:
         activateMenuItem(wordpadWindow, ('file', 'missing'))
         raise Exception("Test failed")
-    except WinGuiAutoError, winGuiAutoError:
-        print "Yup, got: ", str(winGuiAutoError)
-        
-    print "Exit wordpad"
+    except:
+        print("Got Exception")
+
+    print("Exit wordpad")
     activateMenuItem(wordpadWindow, ('file', 'exit'))
-    
-    print "Check you get an exception for non-existent top window"
+
+    print("Check you get an exception for non-existent top window")
     try:
         findTopWindow(wantedText="Banana")
         raise Exception("Test failed")
-    except WinGuiAutoError, winGuiAutoError:
-        print "Yup, got: ", str(winGuiAutoError)
-    
-    print "Err, that's it."
+    except:
+        print("Got Exception")
 
+    print("Err, that's it.")
